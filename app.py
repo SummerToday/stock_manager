@@ -59,11 +59,6 @@ def register_interest():
 def list_interests():
     return get_interests(session['user']['email'])
 
-if __name__ == "__main__":
-    app.run(debug=True)
-
-# app.py에 추가할 라우트들
-
 @app.route("/logout")
 @login_required
 def logout():
@@ -121,3 +116,6 @@ def delete_alert(alert_id):
         return jsonify({"success": True, "message": "알림이 삭제되었습니다."})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
+    
+if __name__ == "__main__":
+    app.run(debug=True)
