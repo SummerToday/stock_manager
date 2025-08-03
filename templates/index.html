@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Manager - 대시보드</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">📈 Stock Manager</div>
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar">U</div>
+                <div>
+                    <div style="font-weight: 600;" id="userName">사용자</div>
+                    <div style="font-size: 12px; color: #666;" id="userEmail">{{ email if email else 'user@example.com' }}</div>
+                </div>
+                <button class="btn btn-secondary" onclick="logout()">로그아웃</button>
+            </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="interestCount">0</div>
+                <div class="stat-label">관심 종목</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="alertCount">0</div>
+                <div class="stat-label">활성 알림</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="todayAlerts">0</div>
+                <div class="stat-label">오늘 알림 발송</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalReturn">+0%</div>
+                <div class="stat-label">총 수익률</div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="content-card">
+                <div class="card-title">
+                    📊 관심 종목
+                    <button class="btn btn-primary btn-small" onclick="openAddStockModal()">+ 종목 추가</button>
+                </div>
+                <div class="stock-list" id="stockList">
+                    <div class="loading" id="stockLoading">
+                        <div class="spinner"></div>
+                        <p>관심 종목을 불러오는 중...</p>
+                    </div>
+                    <div class="empty-state" id="stockEmptyState" style="display: none;">
+                        <div class="empty-state-icon">📈</div>
+                        <p>아직 등록된 관심 종목이 없습니다.<br>종목을 추가해보세요!</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-card">
+                <div class="card-title">🔔 활성 알림</div>
+                <div id="alertList">
+                    <div class="loading" id="alertLoading">
+                        <div class="spinner"></div>
+                        <p>알림 목록을 불러오는 중...</p>
+                    </div>
+                    <div class="empty-state" id="alertEmptyState" style="display: none;">
+                        <div class="empty-state-icon">🔔</div>
+                        <p>설정된 알림이 없습니다.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 종목 추가 모달 -->
+    <div id="addStockModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAddStockModal()">&times;</span>
+            <h2 style="margin-bottom: 20px; color: #333;">관심 종목 추가</h2>
+            <form id="addStockForm" onsubmit="addStock(event)">
+                <div class="form-group">
+                    <label for="stockTicker">종목 코드 *</label>
+                    <input type="text" id="stockTicker" placeholder="예: 005930" required>
+                </div>
+                <div class="form-group">
+                    <label for="stockName">종목명 (선택)</label>
+                    <input type="text" id="stockName" placeholder="예: 삼성전자">
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddStockModal()">취소</button>
+                    <button type="submit" class="btn btn-primary">추가</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 알림 설정 모달 -->
+    <div id="alertModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAlertModal()">&times;</span>
+            <h2 style="margin-bottom: 20px; color: #333;">알림 설정</h2>
+            <form id="alertForm" onsubmit="setAlert(event)">
+                <input type="hidden" id="alertStockTicker">
+                <div class="form-group">
+                    <label for="alertType">알림 유형</label>
+                    <select id="alertType" required>
+                        <option value="">알림 유형을 선택하세요</option>
+                        <option value="price">가격 알림</option>
+                        <option value="psychology">심리도 알림</option>
+                        <option value="rsi">RSI 알림</option>
+                        <option value="volume">거래량 알림</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="alertCondition">조건</label>
+                    <select id="alertCondition" required>
+                        <option value="">조건을 선택하세요</option>
+                        <option value="above">이상</option>
+                        <option value="below">이하</option>
+                        <option value="equal">같음</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="alertValue">기준값</label>
+                    <input type="number" id="alertValue" placeholder="예: 70000" required>
+                </div>
+                <div class="form-group">
+                    <label for="notificationMethod">알림 방법</label>
+                    <select id="notificationMethod" required>
+                        <option value="">알림 방법을 선택하세요</option>
+                        <option value="email">이메일</option>
+                        <option value="slack">슬랙</option>
+                        <option value="both">이메일 + 슬랙</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeAlertModal()">취소</button>
+                    <button type="submit" class="btn btn-primary">설정</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 알림 표시 -->
+    <div class="notification" id="notification">
+        <div style="font-weight: 600; margin-bottom: 5px;" id="notificationTitle">알림</div>
+        <div id="notificationText">작업이 완료되었습니다.</div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
+                    

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Manager - 로그인</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <div class="logo-icon"></div>
+            Stock Manager
+        </div>
+        
+        <h1 class="welcome-text">환영합니다!</h1>
+        <p class="subtitle">
+            스마트한 주식 알림 서비스로<br>
+            투자 기회를 놓치지 마세요
+        </p>
+
+        <a href="/login" class="google-login-btn" onclick="showLoading()">
+            <div class="google-icon"></div>
+            Google로 시작하기
+        </a>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px; color: #666;">로그인 처리 중...</p>
+        </div>
+
+        <div class="features">
+            <div class="feature">
+                <div class="feature-icon target"></div>
+                <div class="feature-title">정확한 알림</div>
+                <div class="feature-desc">심리도, RSI 등 다양한 지표 기반 알림</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon email"></div>
+                <div class="feature-title">다양한 알림</div>
+                <div class="feature-desc">이메일, 슬랙으로 실시간 알림 수신</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon mobile"></div>
+                <div class="feature-title">모바일 최적화</div>
+                <div class="feature-desc">언제 어디서나 쉽게 관리</div>
+            </div>
+        </div>
+
+        <div class="security-note">
+            <h4>안전한 로그인</h4>
+            <p>Google OAuth를 통한 안전하고 간편한 로그인을 제공합니다. 개인정보는 안전하게 보호됩니다.</p>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/login.js') }}"></script>
+</body>
+</html>
