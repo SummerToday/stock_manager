@@ -74,6 +74,67 @@
                 </div>
             </div>
         </div>
+
+        <!-- 실시간 주가 목록 -->
+        <div class="content-card">
+            <div class="card-title">
+                📈 실시간 주가
+                <div class="market-selector">
+                    <button class="btn-tab active" data-market="domestic" onclick="switchMarket('domestic')">국내</button>
+                    <button class="btn-tab" data-market="overseas" onclick="switchMarket('overseas')">해외</button>
+                </div>
+            </div>
+            
+            <div class="market-content">
+                <!-- 국내 주식 -->
+                <div id="domesticMarket" class="market-panel active">
+                    <div class="market-header">
+                        <div class="market-info">
+                            <span class="market-name">코스피</span>
+                            <span class="market-index" id="kospiIndex">2,500.00</span>
+                            <span class="market-change positive" id="kospiChange">+10.50 (+0.42%)</span>
+                        </div>
+                        <div class="market-status">
+                            <span class="status-dot active"></span>
+                            <span class="status-text">장중</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stock-grid" id="domesticStockGrid">
+                        <div class="loading" id="domesticLoading">
+                            <div class="spinner"></div>
+                            <p>국내 주가 정보를 불러오는 중...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 해외 주식 -->
+                <div id="overseasMarket" class="market-panel">
+                    <div class="market-header">
+                        <div class="market-info">
+                            <span class="market-name">S&P 500</span>
+                            <span class="market-index" id="sp500Index">4,200.00</span>
+                            <span class="market-change negative" id="sp500Change">-15.30 (-0.36%)</span>
+                        </div>
+                        <div class="market-selector-dropdown">
+                            <select id="overseasMarketSelect" onchange="changeOverseasMarket()">
+                                <option value="us">미국</option>
+                                <option value="japan">일본</option>
+                                <option value="china">중국</option>
+                                <option value="europe">유럽</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="stock-grid" id="overseasStockGrid">
+                        <div class="loading" id="overseasLoading">
+                            <div class="spinner"></div>
+                            <p>해외 주가 정보를 불러오는 중...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- 종목 추가 모달 -->
@@ -154,4 +215,3 @@
     <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 </body>
 </html>
-                    

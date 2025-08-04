@@ -113,6 +113,31 @@ body {
     transform: translateY(-2px);
 }
 
+/* Market Tab Styles */
+.btn-tab {
+    padding: 8px 16px;
+    border: 2px solid #e0e0e0;
+    background: white;
+    color: #666;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin: 0 4px;
+}
+
+.btn-tab.active {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    border-color: transparent;
+}
+
+.btn-tab:hover:not(.active) {
+    background: #f8f9fa;
+    color: #333;
+}
+
 /* Stats Grid */
 .stats-grid {
     display: grid;
@@ -174,7 +199,272 @@ body {
     gap: 10px;
 }
 
-/* Stock List Styles */
+/* Market Selector */
+.market-selector {
+    display: flex;
+    gap: 4px;
+}
+
+.market-selector-dropdown {
+    display: flex;
+    align-items: center;
+}
+
+.market-selector-dropdown select {
+    padding: 6px 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    background: white;
+    color: #333;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    outline: none;
+}
+
+.market-selector-dropdown select:focus {
+    border-color: #667eea;
+}
+
+/* Market Content */
+.market-content {
+    position: relative;
+}
+
+.market-panel {
+    display: none;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.market-panel.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Market Header */
+.market-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.market-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.market-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: #333;
+}
+
+.market-index {
+    font-size: 24px;
+    font-weight: 800;
+    color: #667eea;
+}
+
+.market-change {
+    font-size: 14px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+.market-change.positive {
+    color: #e74c3c;
+    background: rgba(231, 76, 60, 0.1);
+}
+
+.market-change.negative {
+    color: #3498db;
+    background: rgba(52, 152, 219, 0.1);
+}
+
+.market-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #95a5a6;
+    animation: pulse 2s infinite;
+}
+
+.status-dot.active {
+    background: #27ae60;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.status-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: #666;
+}
+
+/* Stock Grid */
+.stock-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 15px;
+}
+
+.stock-card {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(102, 126, 234, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.stock-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+}
+
+.stock-card:hover::before {
+    transform: scaleX(1);
+}
+
+.stock-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+}
+
+.stock-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+}
+
+.stock-info h4 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.stock-info .stock-code {
+    font-size: 12px;
+    color: #666;
+    background: #f8f9fa;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.stock-price {
+    text-align: right;
+}
+
+.current-price {
+    font-size: 20px;
+    font-weight: 800;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.price-change {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.price-change.positive {
+    color: #e74c3c;
+    background: rgba(231, 76, 60, 0.1);
+}
+
+.price-change.negative {
+    color: #3498db;
+    background: rgba(52, 152, 219, 0.1);
+}
+
+.stock-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.detail-item {
+    font-size: 12px;
+}
+
+.detail-label {
+    color: #666;
+    margin-bottom: 2px;
+}
+
+.detail-value {
+    font-weight: 600;
+    color: #333;
+}
+
+.stock-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 15px;
+}
+
+.btn-add-interest {
+    flex: 1;
+    padding: 8px 12px;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-add-interest:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.btn-add-interest:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Stock List Styles (기존 코드) */
 .stock-list {
     display: flex;
     flex-direction: column;
@@ -195,10 +485,6 @@ body {
 .stock-item:hover {
     transform: translateX(5px);
     box-shadow: 0 5px 20px rgba(102, 126, 234, 0.2);
-}
-
-.stock-info {
-    flex: 1;
 }
 
 .stock-name {
@@ -235,11 +521,6 @@ body {
 
 .change.negative {
     color: #3498db;
-}
-
-.stock-actions {
-    display: flex;
-    gap: 10px;
 }
 
 /* Alert Styles */
@@ -449,5 +730,30 @@ body {
     .modal-content {
         margin: 5% auto;
         width: 95%;
+    }
+
+    .market-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+
+    .market-info {
+        justify-content: center;
+    }
+
+    .stock-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .market-selector {
+        justify-content: center;
+    }
+
+    .card-title {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
     }
 }
