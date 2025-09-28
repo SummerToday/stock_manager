@@ -317,7 +317,7 @@ class KISAPIService:
                 "authorization": f"Bearer {self.access_token}",
                 "appkey": self.app_key,
                 "appsecret": self.app_secret,
-                "tr_id": "HHDFS00000300"
+                "tr_id": "FHPUP02100000"
             }
             params = {
                 "AUTH": "",
@@ -348,11 +348,19 @@ class KISAPIService:
         return None
     
     def get_nasdaq_index(self):
-        """나스닥 지수 조회"""
+        """
+        나스닥 지수 조회 (TR: HHDFS00000300)
+        - KIS 내부 코드(PCOMP)를 사용하여 공식 심볼(IXIC)의 0 반환 문제를 우회합니다.
+        - API가 0을 반환할 경우 경고를 출력합니다.
+        """
         if not self.check_token_valid():
             return None
         
+        NASDAQ_SYMBOL = "PCOMP" # KIS 해외 마스터 파일 기반 나스닥 종합지수 코드
+        
         try:
+            print(f"[DEBUG] 나스닥 지수 조회 재시도 (TR: HHDFS00000300, Symbol: {NASDAQ_SYMBOL})...")
+            
             url = f"{self.base_url}/uapi/overseas-price/v1/quotations/price"
             headers = {
                 "Content-Type": "application/json; charset=utf-8",
@@ -363,31 +371,56 @@ class KISAPIService:
             }
             params = {
                 "AUTH": "",
-                "EXCD": "NAS",
-                "SYMB": "COMP"  # 나스닥 컴포지트 심볼
+                "EXCD": "NAS",  
+                "SYMB": NASDAQ_SYMBOL
             }
             
             response = requests.get(url, headers=headers, params=params)
-            result = response.json()
             
-            if response.status_code == 200 and result.get("rt_cd") == "0":
+            if response.status_code != 200:
+                print(f"[ERROR] 나스닥 지수 API HTTP 오류: Status Code {response.status_code}")
+                return None
+            
+            try:
+                result = response.json()
+            except json.JSONDecodeError as e:
+                print(f"[CRITICAL ERROR] JSON 디코딩 실패: {e}")
+                return None
+            
+            print(f"[DEBUG] 나스닥 지수 API 응답: rt_cd={result.get('rt_cd', 'N/A')}")
+
+            if result.get("rt_cd") == "0":
                 output = result.get("output", {})
-                current_value = float(output.get("last", 0))
-                prev_close = float(output.get("base", 0))
+                
+                current_value = float(output.get("last", 0) or 0)
+                prev_close = float(output.get("base", 0) or 0)
+                
                 change = current_value - prev_close
                 change_percent = (change / prev_close * 100) if prev_close != 0 else 0
                 
-                return {
-                    "name": "나스닥",
-                    "value": round(current_value, 2),
-                    "change": round(change, 2),
-                    "changePercent": round(change_percent, 2)
-                }
+                if current_value > 0:
+                    result_data = {
+                        "name": "나스닥 종합지수 (PCOMP)",
+                        "value": round(current_value, 2),
+                        "change": round(change, 2),
+                        "changePercent": round(change_percent, 2)
+                    }
+                    print(f"[SUCCESS] 나스닥 지수 성공")
+                    return result_data
+                else:
+                    print(f"[WARNING] 나스닥 지수 데이터가 유효하지 않음 (value=0). PCOMP도 실패.")
+                    # 시장 폐장 시 0이 반환될 수 있으므로, 전일 종가를 반환하는 로직을 추가할 수도 있음
+                    if prev_close > 0:
+                         print(f"[INFO] 전일 종가({prev_close})는 유효. 시장 폐장으로 추정.")
+                    return None
+            else:
+                error_msg = result.get("msg1", "알 수 없는 오류")
+                print(f"[ERROR] 나스닥 지수 API 실패 (rt_cd={result.get('rt_cd')}): {error_msg}")
+                return None
                 
         except Exception as e:
-            print(f"나스닥 지수 조회 중 오류: {e}")
-        
-        return None
+            print(f"[FATAL ERROR] 나스닥 지수 조회 중 오류: {e}")
+            return None
     
     @staticmethod
     def format_market_cap(listed_shares, current_price):

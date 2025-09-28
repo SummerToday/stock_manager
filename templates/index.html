@@ -88,15 +88,32 @@
             <div class="market-content">
                 <!-- 국내 주식 -->
                 <div id="domesticMarket" class="market-panel active">
-                    <div class="market-header">
-                        <div class="market-info">
-                            <span class="market-name">코스피</span>
-                            <span class="market-index" id="kospiIndex">2,500.00</span>
-                            <span class="market-change positive" id="kospiChange">+10.50 (+0.42%)</span>
+                    <!-- 코스피 & 코스닥 지수 표시 -->
+                    <div class="market-indices" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                        <!-- 코스피 -->
+                        <div class="market-header">
+                            <div class="market-info">
+                                <span class="market-name">코스피</span>
+                                <span class="market-index" id="kospiIndex">2,500.00</span>
+                                <span class="market-change positive" id="kospiChange">+10.50 (+0.42%)</span>
+                            </div>
+                            <div class="market-status">
+                                <span class="status-dot" id="kospiStatusDot"></span>
+                                <span class="status-text" id="kospiStatusText">준비중</span>
+                            </div>
                         </div>
-                        <div class="market-status">
-                            <span class="status-dot active"></span>
-                            <span class="status-text">장중</span>
+                        
+                        <!-- 코스닥 -->
+                        <div class="market-header">
+                            <div class="market-info">
+                                <span class="market-name">코스닥</span>
+                                <span class="market-index" id="kosdaqIndex">800.00</span>
+                                <span class="market-change negative" id="kosdaqChange">-5.20 (-0.65%)</span>
+                            </div>
+                            <div class="market-status">
+                                <span class="status-dot" id="kosdaqStatusDot"></span>
+                                <span class="status-text" id="kosdaqStatusText">준비중</span>
+                            </div>
                         </div>
                     </div>
                     
@@ -117,8 +134,8 @@
                             <span class="market-change negative" id="nasdaqChange">-15.30 (-0.36%)</span>
                         </div>
                         <div class="market-status">
-                            <span class="status-dot"></span>
-                            <span class="status-text">미국 시장</span>
+                            <span class="status-dot" id="nasdaqStatusDot"></span>
+                            <span class="status-text" id="nasdaqStatusText">미국 시장</span>
                         </div>
                     </div>
                     

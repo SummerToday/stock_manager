@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function () {
     loadAlerts();
     loadMarketData();
     renderMarketIndices(); 
+    updateMarketStatus(); // 장중 상태 업데이트 추가
     const userEmail = document.getElementById('userEmail').textContent;
     if (userEmail && userEmail !== 'user@example.com') {
         const userName = userEmail.split('@')[0];
@@ -18,6 +19,92 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('userAvatar').textContent = userName.charAt(0).toUpperCase();
     }
 });
+
+// 한국 시장 시간 체크 함수
+function isKoreanMarketOpen() {
+    const now = new Date();
+    const koreanTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Seoul"}));
+    const day = koreanTime.getDay(); // 0: 일요일, 1: 월요일, ..., 6: 토요일
+    const hours = koreanTime.getHours();
+    const minutes = koreanTime.getMinutes();
+    const currentTime = hours * 100 + minutes;
+
+    // 주말 체크
+    if (day === 0 || day === 6) {
+        return { isOpen: false, status: '주말 휴장' };
+    }
+
+    // 평일 시간 체크 (한국시간 09:00 - 15:30)
+    if (currentTime >= 900 && currentTime < 1530) {
+        return { isOpen: true, status: '장중' };
+    } else if (currentTime >= 800 && currentTime < 900) {
+        return { isOpen: false, status: '장 시작 전' };
+    } else if (currentTime >= 1530 && currentTime < 1800) {
+        return { isOpen: false, status: '장 마감' };
+    } else {
+        return { isOpen: false, status: '장외시간' };
+    }
+}
+
+// 미국 시장 시간 체크 함수
+function isUSMarketOpen() {
+    const now = new Date();
+    const usTime = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+    const day = usTime.getDay();
+    const hours = usTime.getHours();
+    const minutes = usTime.getMinutes();
+    const currentTime = hours * 100 + minutes;
+
+    // 주말 체크
+    if (day === 0 || day === 6) {
+        return { isOpen: false, status: '주말 휴장' };
+    }
+
+    // 평일 시간 체크 (미국 동부시간 9:30 AM - 4:00 PM)
+    if (currentTime >= 930 && currentTime < 1600) {
+        return { isOpen: true, status: '장중' };
+    } else if (currentTime >= 400 && currentTime < 930) {
+        return { isOpen: false, status: '프리마켓' };
+    } else if (currentTime >= 1600 && currentTime < 2000) {
+        return { isOpen: false, status: '애프터마켓' };
+    } else {
+        return { isOpen: false, status: '장외시간' };
+    }
+}
+
+// 시장 상태 업데이트
+function updateMarketStatus() {
+    // 한국 시장 상태
+    const koreanMarket = isKoreanMarketOpen();
+    updateMarketStatusUI('kospi', koreanMarket);
+    updateMarketStatusUI('kosdaq', koreanMarket);
+
+    // 미국 시장 상태
+    const usMarket = isUSMarketOpen();
+    updateMarketStatusUI('nasdaq', usMarket);
+
+    console.log('[DEBUG] 시장 상태 업데이트:', {
+        korean: koreanMarket,
+        us: usMarket,
+        timestamp: new Date().toLocaleString('ko-KR', {timeZone: 'Asia/Seoul'})
+    });
+}
+
+// 시장 상태 UI 업데이트
+function updateMarketStatusUI(market, marketInfo) {
+    const statusDot = document.getElementById(`${market}StatusDot`);
+    const statusText = document.getElementById(`${market}StatusText`);
+
+    if (statusDot && statusText) {
+        statusText.textContent = marketInfo.status;
+        
+        if (marketInfo.isOpen) {
+            statusDot.className = 'status-dot active';
+        } else {
+            statusDot.className = 'status-dot';
+        }
+    }
+}
 
 // 초기화
 function initializePage() {
@@ -57,11 +144,13 @@ async function renderMarketStocks() {
     const apiMarket = currentMarket === 'domestic' ? 'domestic' : 'us'; // 해외는 미국만
 
     try {
+        console.log(`[DEBUG] ${apiMarket} 마켓 데이터 요청 중...`);
         const response = await fetch(`/api/market/${apiMarket}`);
         const result = await response.json();
         if (!result.success) throw new Error(result.message);
 
         const stocks = result.stocks;
+        console.log(`[DEBUG] ${apiMarket} 종목 ${stocks.length}개 로드됨`);
 
         const stocksHtml = stocks.map(stock => `
             <div class="stock-card" data-ticker="${stock.ticker}">
@@ -284,11 +373,13 @@ function showNotification(message, type = 'success') {
 
 async function renderMarketIndices() {
     try {
+        console.log('[DEBUG] 지수 데이터 요청 중...');
         const response = await fetch('/api/market/indices');
         const result = await response.json();
         if (!result.success) throw new Error(result.message);
 
         const indices = result.indices;
+        console.log('[DEBUG] 지수 데이터 수신:', Object.keys(indices));
 
         // Helper function: 숫자 포맷
         const formatNumber = (value) =>
@@ -297,30 +388,42 @@ async function renderMarketIndices() {
         const renderIndex = (idPrefix, data) => {
             const indexElem = document.getElementById(`${idPrefix}Index`);
             const changeElem = document.getElementById(`${idPrefix}Change`);
-            const timeElem = document.getElementById(`${idPrefix}Time`);
 
-            if (!indexElem || !changeElem) return;
+            if (!indexElem || !changeElem) {
+                console.warn(`[DEBUG] ${idPrefix} 엘리먼트를 찾을 수 없음`);
+                return;
+            }
 
             indexElem.textContent = formatNumber(data.value);
             changeElem.textContent = `${data.change >= 0 ? '+' : ''}${formatNumber(data.change)} (${formatNumber(data.changePercent)}%)`;
             changeElem.className = `market-change ${data.change >= 0 ? 'positive' : 'negative'}`;
-
-            if (timeElem && data.timeDiffMinutes !== undefined) {
-                timeElem.textContent = `${data.timeDiffMinutes}분 전 기준`;
-            }
         };
 
-        // 국내 지수
-        if (indices.kospi) renderIndex('kospi', indices.kospi);
-        if (indices.kosdaq) renderIndex('kosdaq', indices.kosdaq);
+        // 국내 지수 렌더링
+        if (indices.kospi) {
+            renderIndex('kospi', indices.kospi);
+            console.log('[DEBUG] 코스피 업데이트:', indices.kospi.value);
+        }
         
-        // 미국 지수 - 나스닥 표시
-        if (indices.nasdaq) renderIndex('nasdaq', indices.nasdaq);
+        if (indices.kosdaq) {
+            renderIndex('kosdaq', indices.kosdaq);
+            console.log('[DEBUG] 코스닥 업데이트:', indices.kosdaq.value);
+        }
+        
+        // 미국 지수 렌더링
+        if (indices.nasdaq) {
+            renderIndex('nasdaq', indices.nasdaq);
+            console.log('[DEBUG] 나스닥 업데이트:', indices.nasdaq.value);
+        }
 
-        console.log('[DEBUG] 지수 업데이트 완료:', Object.keys(indices));
+        console.log('[DEBUG] 지수 업데이트 완료');
 
     } catch (error) {
-        console.error('지수 데이터 로딩 실패:', error);
+        console.error('[ERROR] 지수 데이터 로딩 실패:', error);
+        // 에러 발생 시 기본값 표시
+        document.getElementById('kospiIndex').textContent = '로딩 실패';
+        document.getElementById('kosdaqIndex').textContent = '로딩 실패';
+        document.getElementById('nasdaqIndex').textContent = '로딩 실패';
     }
 }
 
@@ -363,10 +466,11 @@ window.onclick = function (event) {
     if (event.target === document.getElementById('alertModal')) closeAlertModal();
 };
 
-// 주기적 갱신
+// 주기적 갱신 (10초마다)
 setInterval(() => {
     updateMarketPrices();
     updateStockPrices();
+    updateMarketStatus(); // 시장 상태도 주기적으로 업데이트
 }, 10000);
 
 async function updateMarketPrices() {
