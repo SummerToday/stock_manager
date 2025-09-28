@@ -2,7 +2,6 @@
 let interests = [];
 let alerts = [];
 let currentMarket = 'domestic';
-let currentOverseasMarket = 'us';
 let marketData = {};
 
 // 페이지 로드시 초기화
@@ -42,7 +41,7 @@ function loadMarketData() {
     }, 800);
 }
 
-// 마켓 전환
+// 마켓 전환 (국내/미국만)
 function switchMarket(market) {
     currentMarket = market;
     document.querySelectorAll('.btn-tab').forEach(tab => tab.classList.remove('active'));
@@ -52,20 +51,10 @@ function switchMarket(market) {
     renderMarketStocks();
 }
 
-// 해외 마켓 전환
-function changeOverseasMarket() {
-    const selectElement = document.getElementById('overseasMarketSelect');
-    currentOverseasMarket = selectElement.value;
-    renderMarketIndices();
-    renderMarketStocks();
-}
-
-
-
 async function renderMarketStocks() {
     const gridId = currentMarket === 'domestic' ? 'domesticStockGrid' : 'overseasStockGrid';
     const grid = document.getElementById(gridId);
-    const apiMarket = currentMarket === 'domestic' ? 'domestic' : currentOverseasMarket; // us, japan 등
+    const apiMarket = currentMarket === 'domestic' ? 'domestic' : 'us'; // 해외는 미국만
 
     try {
         const response = await fetch(`/api/market/${apiMarket}`);
@@ -119,9 +108,6 @@ async function renderMarketStocks() {
         grid.innerHTML = '<div class="error">데이터를 불러올 수 없습니다.</div>';
     }
 }
-
-
-
 
 // 관심종목 추가
 function addToInterest(ticker, name) {
@@ -296,6 +282,48 @@ function showNotification(message, type = 'success') {
     }, 4000);
 }
 
+async function renderMarketIndices() {
+    try {
+        const response = await fetch('/api/market/indices');
+        const result = await response.json();
+        if (!result.success) throw new Error(result.message);
+
+        const indices = result.indices;
+
+        // Helper function: 숫자 포맷
+        const formatNumber = (value) =>
+            typeof value === 'number' ? value.toLocaleString('ko-KR', { maximumFractionDigits: 2 }) : '-';
+
+        const renderIndex = (idPrefix, data) => {
+            const indexElem = document.getElementById(`${idPrefix}Index`);
+            const changeElem = document.getElementById(`${idPrefix}Change`);
+            const timeElem = document.getElementById(`${idPrefix}Time`);
+
+            if (!indexElem || !changeElem) return;
+
+            indexElem.textContent = formatNumber(data.value);
+            changeElem.textContent = `${data.change >= 0 ? '+' : ''}${formatNumber(data.change)} (${formatNumber(data.changePercent)}%)`;
+            changeElem.className = `market-change ${data.change >= 0 ? 'positive' : 'negative'}`;
+
+            if (timeElem && data.timeDiffMinutes !== undefined) {
+                timeElem.textContent = `${data.timeDiffMinutes}분 전 기준`;
+            }
+        };
+
+        // 국내 지수
+        if (indices.kospi) renderIndex('kospi', indices.kospi);
+        if (indices.kosdaq) renderIndex('kosdaq', indices.kosdaq);
+        
+        // 미국 지수 - 나스닥 표시
+        if (indices.nasdaq) renderIndex('nasdaq', indices.nasdaq);
+
+        console.log('[DEBUG] 지수 업데이트 완료:', Object.keys(indices));
+
+    } catch (error) {
+        console.error('지수 데이터 로딩 실패:', error);
+    }
+}
+
 // 유틸리티
 function formatPrice(price) {
     return new Intl.NumberFormat('ko-KR').format(price);
@@ -342,48 +370,9 @@ setInterval(() => {
 }, 10000);
 
 async function updateMarketPrices() {
-    await renderMarketIndices(); // 추가된 지수 갱신 함수
-    renderMarketStocks();       // 기존 종목 갱신
+    await renderMarketIndices(); // 지수 갱신 함수
+    renderMarketStocks();       // 종목 갱신
 }
-
-async function renderMarketIndices() {
-    try {
-        const response = await fetch('/api/market/indices');
-        const result = await response.json();
-        if (!result.success) throw new Error(result.message);
-
-        const indices = result.indices;
-
-        // Helper function: 숫자 포맷
-        const formatNumber = (value) =>
-            typeof value === 'number' ? value.toLocaleString('ko-KR', { maximumFractionDigits: 2 }) : '-';
-
-        const renderIndex = (idPrefix, data) => {
-            const indexElem = document.getElementById(`${idPrefix}Index`);
-            const changeElem = document.getElementById(`${idPrefix}Change`);
-            const timeElem = document.getElementById(`${idPrefix}Time`);
-
-            if (!indexElem || !changeElem) return;
-
-            indexElem.textContent = formatNumber(data.value);
-            changeElem.textContent = `${data.change >= 0 ? '+' : ''}${formatNumber(data.change)} (${formatNumber(data.changePercent)}%)`;
-            changeElem.className = `market-change ${data.change >= 0 ? 'positive' : 'negative'}`;
-
-            if (timeElem && data.timeDiffMinutes !== undefined) {
-                timeElem.textContent = `${data.timeDiffMinutes}분 전 기준`;
-            }
-        };
-
-        if (indices.kospi) renderIndex('kospi', indices.kospi);
-        if (indices.kosdaq) renderIndex('kosdaq', indices.kosdaq);
-        if (indices.sp500) renderIndex('sp500', indices.sp500);
-        if (indices.nasdaq) renderIndex('nasdaq', indices.nasdaq);
-
-    } catch (error) {
-        console.error('지수 데이터 로딩 실패:', error);
-    }
-}
-
 
 function updateStockPrices() {
     renderStocks(); // 관심종목 가격 갱신

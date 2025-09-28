@@ -81,7 +81,7 @@
                 📈 실시간 주가
                 <div class="market-selector">
                     <button class="btn-tab active" data-market="domestic" onclick="switchMarket('domestic')">국내</button>
-                    <button class="btn-tab" data-market="overseas" onclick="switchMarket('overseas')">해외</button>
+                    <button class="btn-tab" data-market="overseas" onclick="switchMarket('overseas')">미국</button>
                 </div>
             </div>
             
@@ -108,28 +108,24 @@
                     </div>
                 </div>
 
-                <!-- 해외 주식 -->
+                <!-- 미국 주식 -->
                 <div id="overseasMarket" class="market-panel">
                     <div class="market-header">
                         <div class="market-info">
-                            <span class="market-name">S&P 500</span>
-                            <span class="market-index" id="sp500Index">4,200.00</span>
-                            <span class="market-change negative" id="sp500Change">-15.30 (-0.36%)</span>
+                            <span class="market-name">NASDAQ</span>
+                            <span class="market-index" id="nasdaqIndex">15,000.00</span>
+                            <span class="market-change negative" id="nasdaqChange">-15.30 (-0.36%)</span>
                         </div>
-                        <div class="market-selector-dropdown">
-                            <select id="overseasMarketSelect" onchange="changeOverseasMarket()">
-                                <option value="us">미국</option>
-                                <option value="japan">일본</option>
-                                <option value="china">중국</option>
-                                <option value="europe">유럽</option>
-                            </select>
+                        <div class="market-status">
+                            <span class="status-dot"></span>
+                            <span class="status-text">미국 시장</span>
                         </div>
                     </div>
                     
                     <div class="stock-grid" id="overseasStockGrid">
                         <div class="loading" id="overseasLoading">
                             <div class="spinner"></div>
-                            <p>해외 주가 정보를 불러오는 중...</p>
+                            <p>미국 주가 정보를 불러오는 중...</p>
                         </div>
                     </div>
                 </div>

@@ -2,8 +2,8 @@ from flask import Flask, render_template, request, redirect, session, jsonify, u
 from authlib.integrations.flask_client import OAuth
 from dotenv import load_dotenv
 import os
-import yfinance as yf
 from functools import wraps
+from services.kis_api_service import get_domestic_stocks, get_overseas_stocks, get_all_market_indices, init_kis_api
 
 load_dotenv()
 
@@ -62,124 +62,61 @@ def logout():
 @app.route("/api/market/<market_type>")
 @login_required
 def get_market_stocks(market_type):
+    """시장별 주식 데이터 조회 - 국내, 미국만 지원"""
     try:
-        market_tickers = {
-            "us": ["AAPL", "MSFT", "GOOGL", "AMZN"],
-            "domestic": ["005930.KS", "000660.KS", "035420.KQ", "005380.KS"]
-        }
+        print(f"[DEBUG] 마켓 타입: {market_type} 데이터 요청")
+        
+        if market_type == "domestic":
+            # 국내 주식 - 한국투자증권 API 사용
+            result = get_domestic_stocks()
+            print(f"[DEBUG] 국내 주식 응답: {len(result.get('stocks', []))}개 종목")
+            return jsonify(result)
+        
+        elif market_type == "us":
+            # 미국 주식 - 한국투자증권 API 사용
+            result = get_overseas_stocks(market_type)
+            print(f"[DEBUG] 미국 주식 응답: {len(result.get('stocks', []))}개 종목")
+            return jsonify(result)
+        
+        else:
+            return jsonify({"success": False, "message": "국내와 미국 시장만 지원됩니다"}), 400
 
-        domestic_names = {
-            "005930": "삼성전자",
-            "000660": "SK하이닉스",
-            "035420": "NAVER",
-            "005380": "현대차"
-        }
-
-        tickers = market_tickers.get(market_type, [])
-        if not tickers:
-            return jsonify({"success": True, "stocks": []})
-
-        print(f"[DEBUG] 요청된 마켓 타입: {market_type}")
-        print(f"[DEBUG] 사용 티커 목록: {tickers}")
-
-        # 15분봉 사용
-        data = yf.download(tickers=tickers, period="1d", interval="15m", threads=True, group_by='ticker')
-        print("[DEBUG] 데이터 수신 완료")
-
-        stocks = []
-        for ticker in tickers:
-            try:
-                df = data[ticker]
-                close = df['Close'].dropna()
-                if len(close) < 2:
-                    print(f"[WARN] {ticker} 데이터 부족")
-                    continue
-
-                price = round(close.iloc[-1], 2)
-                change = round(price - close.iloc[-2], 2)
-                change_percent = round((change / close.iloc[-2]) * 100, 2)
-                volume = int(df["Volume"].dropna().iloc[-1])
-
-                symbol = ticker.replace(".KS", "").replace(".KQ", "")
-                name = domestic_names.get(symbol, symbol) if market_type == "domestic" else symbol
-
-                stocks.append({
-                    "ticker": symbol,
-                    "name": name,
-                    "price": price,
-                    "change": change,
-                    "changePercent": change_percent,
-                    "volume": volume,
-                    "marketCap": "-"
-                })
-            except Exception as e:
-                print(f"[ERROR] {ticker} 처리 중 오류: {e}")
-                continue
-
-        return jsonify({"success": True, "stocks": stocks})
     except Exception as e:
-        print(f"[ERROR] 전체 처리 실패: {e}")
+        print(f"[ERROR] 시장 데이터 조회 실패 ({market_type}): {e}")
         return jsonify({"success": False, "message": str(e)}), 500
-
 
 @app.route("/api/market/indices")
 @login_required
-def get_market_indices():
+def get_market_indices_api():
+    """시장 지수 데이터 조회 - 모든 지수에 KIS API 사용"""
     try:
-        print("[DEBUG] === 지수 데이터 수신 시작 ===")
+        print("[DEBUG] === 지수 데이터 수신 시작 (KIS API) ===")
         
-        index_tickers = {
-            "kospi": "^KS11",
-            "kosdaq": "^KQ11",
-            "sp500": "^GSPC",
-            "nasdaq": "^IXIC"
-        }
-
-        result = {}
-        for name, ticker in index_tickers.items():
-            try:
-                stock = yf.Ticker(ticker)
-                hist = stock.history(period="2d", interval="1m")  # 최근 2일치 1분봉
-
-                if hist.empty:
-                    print(f"[WARN] {ticker} 데이터 없음")
-                    continue
-
-                last_valid = hist["Close"].dropna().iloc[-1]
-                prev_close = hist["Close"].dropna().iloc[-2]
-
-                change = last_valid - prev_close
-                change_percent = (change / prev_close * 100) if prev_close else 0
-
-                # 시간 차 계산
-                last_timestamp = hist.index[-1]
-                from datetime import datetime, timezone
-                now_utc = datetime.now(timezone.utc)
-                minutes_ago = int((now_utc - last_timestamp).total_seconds() // 60)
-
-                print(f"[DEBUG] {name.upper()} ({ticker})")
-                print(f"         현재가: {last_valid}, 전일종가: {prev_close}")
-                print(f"         변화량: {change}, 변동률: {change_percent}%")
-
-                result[name] = {
-                    "value": float(round(last_valid, 2)),
-                    "change": float(round(change, 2)),
-                    "changePercent": float(round(change_percent, 2)),
-                    "timeDiffMinutes": minutes_ago
-                }
-
-            except Exception as e:
-                print(f"[WARN] {ticker} 지수 오류:", e)
-                continue
-
-        print("[DEBUG] 지수 응답 결과:", result)
+        # 모든 지수를 한국투자증권 API로 조회
+        result = get_all_market_indices()
+        
+        if result.get("success"):
+            print(f"[DEBUG] KIS API 지수 데이터: {list(result['indices'].keys())}")
+            for name, data in result['indices'].items():
+                print(f"[DEBUG] {name.upper()}: {data.get('value', 0)}, 변화: {data.get('change', 0)} ({data.get('changePercent', 0)}%)")
+        else:
+            print(f"[ERROR] 지수 조회 실패: {result.get('message', '알 수 없는 오류')}")
+        
         print("[DEBUG] === 지수 데이터 수신 완료 ===")
-        return jsonify({"success": True, "indices": result})
+        return jsonify(result)
+        
     except Exception as e:
+        print(f"[ERROR] 지수 데이터 조회 실패: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
 
-
-
-
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Flask 2.0+에서는 before_first_request가 deprecated되었으므로 직접 호출
+    with app.app_context():
+        if not init_kis_api():
+            print("⚠️  KIS API 초기화 실패 - .env 파일에 KIS_APP_KEY, KIS_APP_SECRET 설정 필요")
+            print("📋 필요한 환경변수:")
+            print("   KIS_APP_KEY=your_app_key")
+            print("   KIS_APP_SECRET=your_app_secret")
+    
+    # 호스트와 포트 명시적 설정
+    app.run(debug=True, host='127.0.0.1', port=5000, threaded=True)
